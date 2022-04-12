@@ -2,7 +2,11 @@ import cv2
 import os
 import json
 
+DEBUG_PAR = True
+
+
 def overlay_img(background, overlay, start_point, dim):
+    if DEBUG_PAR: print(f"overlay shape : {overlay.shape}, dim : {dim}")
     for y in range(dim[0]):
         for x in range(dim[1]):
             overlay_color = overlay[y, x, :3]  # first three elements are color (RGB)
@@ -37,23 +41,23 @@ def ret_start_point(h, w, padding_rate, dim, flag):
 if __name__ == '__main__':
     dir_name = '..\\imgs\\data_annotated'
     new_dir_name = dir_name + '_logo'
-    os.makedirs(new_dir_name)
+    os.makedirs(new_dir_name, exist_ok=True)
     files = os.listdir(dir_name)
     n_json_list = [name for name in files if name.split('.')[-1] !='json']
     file_name_list = ['.'.join(file.split('.')[:-1]) for file in n_json_list]
 
-    logo_path = '..\\imgs\\logo\\TLC-favicon.png'
+    logo_path = '..\\imgs\\logo\\TLC-favicon-new.png'
     logo = cv2.imread(logo_path, cv2.IMREAD_UNCHANGED)
     logo_h, logo_w = logo.shape[:2]
-
-    padding_rate = 0.03
+    if DEBUG_PAR : print("Logo Shape : ", logo.shape)
+    padding_rate = 0.02
     resize_rate = 0.1
     cnt = 0 
 
     for full_name, file_name in zip(n_json_list, file_name_list):
         json_path = os.path.join(dir_name,file_name)+'.json'
         if(os.path.isfile(json_path)):
-
+            
             with open(os.path.join(json_path), 'r') as fcc_file:
                 json_obj = json.load(fcc_file)
             flag = None
@@ -65,11 +69,17 @@ if __name__ == '__main__':
                 background = cv2.imread(img_path)
                 h,w = background.shape[:2]
 
+                if DEBUG_PAR: print(f"Img Shape : {background.shape}, {file_name}")
+
                 # dim = (int(resize_rate * h / logo_h), int(resize_rate * w / logo_w))
                 resize_rate_min = min(resize_rate * h / logo_h, resize_rate * w / logo_w)
                 dim = (int(logo_h * resize_rate_min), int(logo_w * resize_rate_min))
+                
+                if DEBUG_PAR: print(f"dim : {dim}")
+
                 start_point = ret_start_point(h,w,padding_rate,dim,flag)
-                overlay = cv2.resize(logo, dim, interpolation = cv2.INTER_AREA)
+                overlay = cv2.resize(logo, (dim[1], dim[0]), interpolation = cv2.INTER_AREA)
+
                 new_img = overlay_img(background, overlay, start_point, dim)
                 print(os.path.join(new_dir_name, f'{cnt}.png'))
                 cv2.imwrite(os.path.join(new_dir_name, f'{cnt}.png'),new_img)
